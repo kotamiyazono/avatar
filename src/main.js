@@ -80,8 +80,10 @@ class AvatarApp {
 
         this.initUI();
         this.initVisualizer();
+        // テーマを先に適用してから visualizer を start
         this.applyTheme(this.settings.theme);
         this.applyVisualization(this.settings.visualization);
+        this.visualizer.start();
     }
 
     initUI() {
@@ -114,7 +116,7 @@ class AvatarApp {
     initVisualizer() {
         const canvas = document.getElementById('visualization');
         this.visualizer = new AudioVisualizer(canvas);
-        this.visualizer.start();
+        // start() は applyTheme の後に呼ぶ
     }
 
     loadSettingsToForm() {
@@ -512,7 +514,8 @@ class AvatarApp {
     applyVisualization(type) {
         const showSphere = type === 'sphere';
         const showRing = type === 'ring';
-        this.visualizer.setVisualizationElements(showSphere, showRing);
+        const showGrid = type === 'grid';
+        this.visualizer.setVisualizationElements(showSphere, showRing, showGrid);
     }
 }
 
