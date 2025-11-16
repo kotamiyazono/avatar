@@ -276,51 +276,7 @@ class AvatarApp {
     }
 
     setupSessionEvents() {
-        // AIが話し始めたとき（複数のイベント名を試す）
-        this.session.on('audio_start', (event) => {
-            console.log('🎤 AI started speaking (audio_start)', event);
-            this.isSpeaking = true;
-            this.visualizer.setColor(true); // AI = 青色
-        });
-
-        this.session.on('audio_started', (event) => {
-            console.log('🎤 AI started speaking (audio_started)', event);
-            this.isSpeaking = true;
-            this.visualizer.setColor(true); // AI = 青色
-        });
-
-        this.session.on('response_audio_start', (event) => {
-            console.log('🎤 AI started speaking (response_audio_start)', event);
-            this.isSpeaking = true;
-            this.visualizer.setColor(true); // AI = 青色
-        });
-
-        this.session.on('response.audio_start', (event) => {
-            console.log('🎤 AI started speaking (response.audio_start)', event);
-            this.isSpeaking = true;
-            this.visualizer.setColor(true); // AI = 青色
-        });
-
-        // AIが話し終わったとき（元の色に戻す）
-        this.session.on('audio_stopped', (event) => {
-            console.log('✅ AI stopped speaking', event);
-            this.isSpeaking = false;
-            this.visualizer.setColor(false); // ユーザー = ピンク/レッド
-        });
-
-        // 音声が中断されたとき
-        this.session.on('audio_interrupted', (event) => {
-            console.log('⚠️ Audio interrupted', event);
-            this.isSpeaking = false;
-            this.visualizer.setColor(false); // ユーザー = ピンク/レッド
-        });
-
-        // レスポンス開始イベント
-        this.session.on('response_started', (event) => {
-            console.log('📢 Response started', event);
-            this.isSpeaking = true;
-            this.visualizer.setColor(true); // AI = 青色
-        });
+        // 注: 音声の色変更は音量ベースの検出を使用（startAudioVisualization内）
 
         // ツール実行時のステータス表示
         this.session.on('agent_tool_start', (event) => {
@@ -470,31 +426,6 @@ class AvatarApp {
                     const wave = Math.sin(time * 2 + i * 0.1) * 10;
                     dataArray[i] = Math.max(dataArray[i], 15 + wave);
                 }
-            }
-
-            this.visualizer.updateAudioData(dataArray);
-            requestAnimationFrame(updateVisualizer);
-        };
-
-        updateVisualizer();
-    }
-
-    startDummyVisualization() {
-        const bufferLength = 128;
-        const dataArray = new Uint8Array(bufferLength);
-        let time = 0;
-
-        const updateVisualizer = () => {
-            if (!this.isConnected) return;
-
-            time += 0.05;
-
-            for (let i = 0; i < bufferLength; i++) {
-                const wave1 = Math.sin(time * 2 + i * 0.1) * 40;
-                const wave2 = Math.sin(time * 3 + i * 0.05) * 30;
-                const wave3 = Math.sin(time * 5 + i * 0.2) * 20;
-                const noise = Math.random() * 15;
-                dataArray[i] = Math.max(0, Math.min(255, 50 + wave1 + wave2 + wave3 + noise));
             }
 
             this.visualizer.updateAudioData(dataArray);
