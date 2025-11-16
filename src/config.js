@@ -4,7 +4,7 @@
  */
 
 export const API_CONFIG = {
-    BASE_URL: 'http://localhost:3002',
+    BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3002',
     ENDPOINTS: {
         AUTH: '/auth',
         TOKEN: '/token',
