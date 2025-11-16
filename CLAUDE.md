@@ -35,7 +35,7 @@ npm run preview
    - 設定の保存・読み込み（localStorage）
    - UI制御とイベントハンドリング
    - Web Audio APIによる音声レベル解析
-   - DuckDuckGo検索ツールの統合
+   - Tavily AI Search API統合による検索ツール
 
 2. **AudioVisualizer (src/visualizer.js)**
    - Three.jsを使用した3Dビジュアライゼーション
@@ -46,7 +46,8 @@ npm run preview
 3. **Server (server.js)**
    - Expressサーバー（ポート3002）
    - エフェメラルキー生成エンドポイント（/token）
-   - OpenAI APIキーの安全な管理
+   - Web検索プロキシエンドポイント（/search）- Tavily API経由
+   - OpenAI・Tavily APIキーの安全な管理
 
 ### OpenAI Realtime API Integration
 
@@ -99,9 +100,20 @@ https://platform.openai.com/docs/guides/realtime
 サーバー側の`.env`ファイルでAPIキーを設定:
 ```
 OPENAI_API_KEY=sk-...
+TAVILY_API_KEY=tvly-...
 ```
 
-**重要**: APIキーはサーバーサイドで管理され、クライアント側には公開されません。エフェメラルキーのみがクライアントに送信されます。
+**重要**:
+- APIキーはサーバーサイドで管理され、クライアント側には公開されません
+- OpenAI: エフェメラルキーのみがクライアントに送信
+- Tavily: サーバー経由でプロキシされる（クライアントからは見えない）
+
+**Tavily API**:
+- AI向けに最適化された検索API
+- 無料枠: 月1,000クエリ
+- リアルタイム情報（天気、ニュース、最新イベント）に対応
+- 信頼できる情報源を優先し、AIが読みやすい要約を自動生成
+- 取得: https://tavily.com
 
 ## Browser Requirements
 

@@ -8,7 +8,7 @@ OpenAI Realtime APIを使用した音声エージェント。音声に反応す�
 - 🌊 **3Dビジュアライゼーション**: 音声に反応して動く3D球体とリング（Three.js使用）
 - ⚡ **低レイテンシー**: OpenAI Realtime API（WebRTC）による自然な会話体験
 - 🎨 **カスタマイズ可能**: テーマ切り替え（ライト/ダーク/システム）、ビジュアライゼーション選択（球体/リング）
-- 🔍 **Web検索機能**: DuckDuckGo検索ツール統合で最新情報にアクセス
+- 🔍 **Web検索機能**: Tavily AI Search API統合でリアルタイム情報にアクセス
 
 ## セットアップ
 
@@ -20,7 +20,7 @@ npm install
 
 ### 2. 環境変数の設定
 
-`.env`ファイルを作成（または`.env.example`をコピー）して、OpenAI APIキーを設定：
+`.env`ファイルを作成（または`.env.example`をコピー）して、APIキーを設定：
 
 ```bash
 cp .env.example .env
@@ -29,7 +29,12 @@ cp .env.example .env
 `.env`ファイルを編集：
 ```
 OPENAI_API_KEY=sk-...
+TAVILY_API_KEY=tvly-...
 ```
+
+**APIキーの取得**:
+- OpenAI API: https://platform.openai.com/api-keys
+- Tavily API (無料枠: 月1,000クエリ): https://tavily.com
 
 **重要**: APIキーはサーバーサイドで管理され、クライアント側には公開されません。
 
@@ -76,10 +81,11 @@ npm run preview
 
 - **OpenAI Realtime API**: WebRTC経由での音声通信
 - **@openai/agents SDK**: 高レベルのRealtime API統合
+- **Tavily AI Search API**: AI向けに最適化されたWeb検索
 - **Vanilla JavaScript**: フレームワーク不要のシンプルな実装
 - **Three.js**: 3Dビジュアライゼーション
 - **Web Audio API**: 音声レベルの解析
-- **Express**: バックエンドサーバー（エフェメラルキー生成）
+- **Express**: バックエンドサーバー（エフェメラルキー生成・検索プロキシ）
 - **Vite**: 高速な開発環境
 
 ## プロジェクト構造
@@ -87,11 +93,12 @@ npm run preview
 ```
 avatar/
 ├── index.html              # メインHTML（CSS変数でテーマ管理）
-├── server.js              # バックエンドサーバー（エフェメラルキー生成）
+├── server.js              # バックエンドサーバー（エフェメラルキー生成・検索API）
 ├── src/
-│   ├── main.js            # アプリケーションロジック・Realtime API統合
+│   ├── main.js            # アプリケーションロジック・Realtime API統合・検索ツール
 │   └── visualizer.js      # Three.jsによる3Dビジュアライゼーション
 ├── package.json
+├── .env
 ├── .env.example
 └── README.md
 ```

@@ -12,61 +12,37 @@ const webSearchTool = tool({
     async execute({ query }) {
         console.log('🔍 Executing web search:', query);
         try {
-            // DuckDuckGo Instant Answer APIを使用
-            const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1`);
+            // サーバー経由で検索を実行（CORS回避とより良い結果のため）
+            const response = await fetch('http://localhost:3002/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ query })
+            });
+
+            if (!response.ok) {
+                throw new Error('Search request failed');
+            }
+
             const data = await response.json();
 
-            let result = '';
-
-            // Abstractがある場合（百科事典的な情報）
-            if (data.Abstract && data.Abstract.length > 0) {
-                result = `${data.AbstractText}\n\nSource: ${data.AbstractURL}`;
-                console.log('✅ Found Abstract:', result);
-            }
-            // RelatedTopicsがある場合
-            else if (data.RelatedTopics && data.RelatedTopics.length > 0) {
-                const topics = [];
-                for (const topic of data.RelatedTopics) {
-                    if (topic.Text) {
-                        topics.push(topic.Text);
-                    } else if (topic.Topics) {
-                        // ネストされたトピックも展開
-                        for (const subTopic of topic.Topics) {
-                            if (subTopic.Text) {
-                                topics.push(subTopic.Text);
-                            }
-                        }
-                    }
-                }
-
-                if (topics.length > 0) {
-                    result = topics.slice(0, 5).join('\n\n');
-                    console.log('✅ Found Topics:', topics.length, 'items');
-                } else {
-                    result = 'No detailed information found for this query.';
-                    console.log('⚠️ RelatedTopics empty');
-                }
-            }
-            // Answersがある場合（計算や単位変換など）
-            else if (data.Answer && data.Answer.length > 0) {
-                result = data.Answer;
-                console.log('✅ Found Answer:', result);
-            }
-            // Definitionがある場合（辞書的な定義）
-            else if (data.Definition && data.Definition.length > 0) {
-                result = `${data.Definition}\n\nSource: ${data.DefinitionURL || 'DuckDuckGo'}`;
-                console.log('✅ Found Definition:', result);
-            }
-            else {
-                result = 'No information found for this query. Try rephrasing or being more specific.';
-                console.log('❌ No results found');
-                console.log('API Response:', JSON.stringify(data, null, 2));
+            if (!data.results || data.results.length === 0) {
+                console.log('⚠️ No results found');
+                return data.message || 'No results found. Try rephrasing your query.';
             }
 
-            return result;
+            // 結果を整形
+            const formattedResults = data.results.map((result, index) => {
+                return `${index + 1}. ${result.title}\n   ${result.snippet}`;
+            }).join('\n\n');
+
+            console.log('✅ Found', data.results.length, 'results');
+            return `Search results for "${query}":\n\n${formattedResults}`;
+
         } catch (error) {
             console.error('❌ Web search error:', error);
-            return 'Failed to perform web search due to an error.';
+            return 'Failed to perform web search. Please try again.';
         }
     }
 });
