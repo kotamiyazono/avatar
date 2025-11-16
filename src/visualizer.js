@@ -68,12 +68,12 @@ export class AudioVisualizer {
         // 中心の球体（ワイヤーフレーム）
         const sphereGeometry = new THREE.IcosahedronGeometry(1, 3);
         this.sphereMaterial = new THREE.MeshPhongMaterial({
-            color: 0x787878, // 初期はグレー
+            color: 0x404040, // より薄いグレー
             wireframe: true,
-            emissive: 0x787878,
-            emissiveIntensity: 0.5,
+            emissive: 0x404040,
+            emissiveIntensity: 0.2, // 初期発光を低く
             transparent: true,
-            opacity: 0.9
+            opacity: 0.4 // 透明度を上げて薄く
         });
         this.sphere = new THREE.Mesh(sphereGeometry, this.sphereMaterial);
         this.scene.add(this.sphere);
@@ -89,11 +89,11 @@ export class AudioVisualizer {
 
         for (let i = 0; i < this.numBars; i++) {
             const material = new THREE.MeshPhongMaterial({
-                color: 0x787878, // 初期はグレー
-                emissive: 0x787878,
-                emissiveIntensity: 0.6,
+                color: 0x404040, // より薄いグレー
+                emissive: 0x404040,
+                emissiveIntensity: 0.2, // 初期発光を低く
                 transparent: true,
-                opacity: 0.9
+                opacity: 0.3 // 透明度を上げて薄く
             });
 
             const bar = new THREE.Mesh(barGeometry, material);
@@ -245,7 +245,8 @@ export class AudioVisualizer {
         this.sphere.rotation.z = time * 0.2;
         this.sphereMaterial.color = color;
         this.sphereMaterial.emissive = color;
-        this.sphereMaterial.emissiveIntensity = 0.3 + avgValue * 0.7;
+        this.sphereMaterial.emissiveIntensity = 0.2 + avgValue * 1.8; // 発光強度を大幅に増加
+        this.sphereMaterial.opacity = 0.4 + avgValue * 0.6; // 音量に応じて不透明度も上昇
 
         // リング全体を3軸回転
         this.barsGroup.rotation.x = time * 0.2;
@@ -263,7 +264,8 @@ export class AudioVisualizer {
             // 色を更新
             bar.material.color = color;
             bar.material.emissive = color;
-            bar.material.opacity = 0.6 + value * 0.4;
+            bar.material.emissiveIntensity = 0.2 + value * 1.5; // 発光強度を追加
+            bar.material.opacity = 0.3 + value * 0.7; // 音量反応をより顕著に
 
             // 位置を若干変更（波のような動き）
             const baseRadius = bar.userData.radius;
@@ -276,8 +278,8 @@ export class AudioVisualizer {
 
         // ライトの色と強度を更新
         this.pointLight.color = color;
-        const intensityMultiplier = this.theme === 'dark' ? 3.5 : 2.5;
-        this.pointLight.intensity = 1.5 + avgValue * intensityMultiplier;
+        const intensityMultiplier = this.theme === 'dark' ? 5.0 : 4.0; // 強度を上げて発光感を増加
+        this.pointLight.intensity = 1.0 + avgValue * intensityMultiplier;
 
         // カメラを微妙に動かす
         this.camera.position.x = Math.sin(time * 0.3) * 0.3;

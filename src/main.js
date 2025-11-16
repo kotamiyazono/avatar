@@ -529,14 +529,8 @@ class AvatarApp {
         // ビジュアライザーにテーマを適用
         this.visualizer.setTheme(actualTheme);
 
-        // HTMLにdata-theme属性を設定してCSS変数を適用
-        if (theme === 'system') {
-            // システムテーマの場合はdata-theme属性を削除（@media queryに任せる）
-            document.documentElement.removeAttribute('data-theme');
-        } else {
-            // 手動選択の場合はdata-theme属性を設定
-            document.documentElement.setAttribute('data-theme', actualTheme);
-        }
+        // 常にdata-theme属性を設定（システムテーマの場合も判定結果を適用）
+        document.documentElement.setAttribute('data-theme', actualTheme);
     }
 
     applyVisualization(type) {
