@@ -162,8 +162,7 @@
             padding: 48px;
             width: 90vw;
             max-width: 600px;
-            height: 90vh;
-            max-height: 800px;
+            max-height: 90vh;
             overflow-y: auto;
             border-radius: 8px;
         }
@@ -309,7 +308,7 @@
 
         #session-info {
             position: fixed;
-            bottom: 40px;
+            top: 40px;
             left: 40px;
             background: transparent;
             color: var(--text-secondary);
@@ -320,6 +319,11 @@
             opacity: 0.7;
             line-height: 1.5;
             white-space: pre-line;
+        }
+
+        #session-info strong {
+            color: var(--text-primary);
+            font-weight: 500;
         }
 
         /* Scrollbar */
@@ -339,6 +343,7 @@
         .settings-content::-webkit-scrollbar-thumb:hover {
             background: var(--text-secondary);
         }
+
     </style>
 </head>
 <body>
@@ -354,6 +359,11 @@
     <div id="settings-modal">
         <div class="settings-content">
             <h2>Settings</h2>
+
+            <div class="setting-group">
+                <label for="password-input">Password</label>
+                <input type="password" id="password-input" placeholder="Password" autocomplete="off">
+            </div>
 
             <div class="setting-group">
                 <label for="voice">Voice</label>
@@ -407,6 +417,19 @@
         </div>
     </div>
 
-    <script type="module" src="/src/main.js?v=2"></script>
+    <script type="module">
+        // パスワード認証の初期化
+        import { AuthManager } from '/src/auth.js';
+
+        // グローバルな認証マネージャーインスタンスを作成
+        window.authManager = new AuthManager();
+
+        // DOMContentLoadedで初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            const passwordInput = document.getElementById('password-input');
+            window.authManager.init(passwordInput);
+        });
+    </script>
+    <script type="module" src="/src/main.js?v=3"></script>
 </body>
 </html>

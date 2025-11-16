@@ -1,6 +1,7 @@
 import { AudioVisualizer } from './visualizer.js';
 import { RealtimeAgent, RealtimeSession, tool } from '@openai/agents/realtime';
 import { z } from 'zod';
+import { API_CONFIG } from './config.js';
 
 // 定数定義
 const PRICING = {
@@ -21,7 +22,7 @@ const webSearchTool = tool({
         console.log('🔍 Executing web search:', query);
         try {
             // サーバー経由で検索を実行（CORS回避とより良い結果のため）
-            const response = await fetch('http://localhost:3002/search', {
+            const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SEARCH}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -160,7 +161,10 @@ class AvatarApp {
         this.settingsModal.classList.remove('active');
     }
 
-    saveSettings() {
+    async saveSettings() {
+        const oldVoice = this.settings.voice;
+        const oldInstructions = this.settings.instructions;
+
         this.settings.voice = this.voiceSelect.value;
         this.settings.instructions = this.instructionsInput.value;
         this.settings.theme = this.themeSelect.value;
@@ -173,12 +177,42 @@ class AvatarApp {
         localStorage.setItem('visualization', this.settings.visualization);
         localStorage.setItem('model', this.settings.model);
 
+        // パスワードが変更された場合は認証状態をリセット
+        if (window.authManager) {
+            window.authManager.checkPasswordAndClearIfChanged();
+        }
+
         this.applyTheme(this.settings.theme);
         this.applyVisualization(this.settings.visualization);
         this.updateSessionInfo();
 
+        // セッション中にvoiceまたはmodelが変更された場合、再接続が必要
+        if (this.isConnected) {
+            const voiceChanged = oldVoice !== this.settings.voice;
+            const instructionsChanged = oldInstructions !== this.settings.instructions;
+
+            if (voiceChanged) {
+                this.showStatus('Voice changed. Reconnect to apply', 4000);
+            } else if (instructionsChanged) {
+                // Instructionsのみの変更なら即座に反映を試みる
+                if (this.session) {
+                    try {
+                        await this.session.update({
+                            instructions: this.settings.instructions
+                        });
+                        console.log('✅ Instructions updated');
+                        this.showStatus('Instructions updated');
+                    } catch (error) {
+                        console.error('❌ Failed to update instructions:', error);
+                    }
+                }
+            }
+        }
+
         this.closeSettings();
-        this.showStatus('Settings saved');
+        if (!this.isConnected || oldVoice === this.settings.voice) {
+            this.showStatus('Settings saved');
+        }
     }
 
     showStatus(message, duration = 2000) {
@@ -199,6 +233,28 @@ class AvatarApp {
 
     async connect() {
         try {
+            // パスワード認証チェック
+            if (!window.authManager) {
+                this.showStatus('Authentication system not ready', 3000);
+                return;
+            }
+
+            if (!window.authManager.isAuthenticated()) {
+                const result = await window.authManager.authenticate();
+                if (!result.success) {
+                    // エラータイプに応じたメッセージを表示
+                    const errorMessages = {
+                        'empty_password': 'Please enter password in Settings first',
+                        'invalid_password': 'Invalid password. Please check Settings',
+                        'network_error': 'Network error. Please check server connection',
+                        'system_error': 'Authentication system error'
+                    };
+                    const message = errorMessages[result.error] || 'Authentication failed';
+                    this.showStatus(message, 3000);
+                    return;
+                }
+            }
+
             this.connectBtn.disabled = true;
             this.showStatus('Connecting...');
 
@@ -234,7 +290,7 @@ class AvatarApp {
 
             // サーバーからエフェメラルキーを取得
             this.showStatus('Generating token...');
-            const tokenResponse = await fetch('http://localhost:3002/token', {
+            const tokenResponse = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TOKEN}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -614,12 +670,14 @@ class AvatarApp {
     }
 
     updateSessionInfo() {
+        const voiceName = this.settings.voice.charAt(0).toUpperCase() + this.settings.voice.slice(1);
         const modelName = this.settings.model;
 
         if (!this.isConnected) {
-            this.sessionInfo.textContent =
-                `${modelName}\n` +
-                `0 tokens (in: 0 / out: 0)\n` +
+            this.sessionInfo.innerHTML =
+                `<strong>${voiceName}</strong><br>` +
+                `Model: ${modelName}<br>` +
+                `0 tokens (in: 0 / out: 0)<br>` +
                 `$0.00`;
             return;
         }
@@ -631,9 +689,10 @@ class AvatarApp {
             this.settings.model
         );
 
-        this.sessionInfo.textContent =
-            `${modelName}\n` +
-            `${totalTokens.toLocaleString()} tokens (in: ${this.tokenUsage.inputTokens.toLocaleString()} / out: ${this.tokenUsage.outputTokens.toLocaleString()})\n` +
+        this.sessionInfo.innerHTML =
+            `<strong>${voiceName}</strong><br>` +
+            `Model: ${modelName}<br>` +
+            `${totalTokens.toLocaleString()} tokens (in: ${this.tokenUsage.inputTokens.toLocaleString()} / out: ${this.tokenUsage.outputTokens.toLocaleString()})<br>` +
             `$${cost.toFixed(4)}`;
     }
 }

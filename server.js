@@ -11,6 +11,40 @@ const PORT = 3002;
 app.use(cors());
 app.use(express.json());
 
+// パスワード認証エンドポイント
+app.post('/auth', async (req, res) => {
+    try {
+        const { passwordHash } = req.body;
+
+        if (!passwordHash) {
+            return res.status(400).json({ error: 'Password hash is required' });
+        }
+
+        const correctHash = process.env.PASSWORD_HASH;
+        if (!correctHash) {
+            console.error('❌ PASSWORD_HASH not configured in .env');
+            return res.status(500).json({
+                error: 'Server configuration error',
+                message: 'Password authentication not configured'
+            });
+        }
+
+        if (passwordHash === correctHash) {
+            console.log('✅ Authentication successful');
+            res.json({ success: true, message: 'Authentication successful' });
+        } else {
+            console.log('❌ Authentication failed: Invalid password');
+            res.status(401).json({ success: false, message: 'Invalid password' });
+        }
+    } catch (error) {
+        console.error('❌ Authentication error:', error);
+        res.status(500).json({
+            error: 'Authentication failed',
+            message: error.message
+        });
+    }
+});
+
 // Web検索エンドポイント（Tavily APIを使用）
 app.post('/search', async (req, res) => {
     try {
