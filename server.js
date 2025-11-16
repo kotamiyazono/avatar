@@ -102,12 +102,12 @@ app.post('/search', async (req, res) => {
 // エフェメラルキー生成エンドポイント
 app.post('/token', async (req, res) => {
     try {
-        const { voice, instructions } = req.body;
+        const { voice, instructions, model } = req.body;
 
         const sessionConfig = {
             session: {
                 type: 'realtime',
-                model: 'gpt-realtime',
+                model: model || 'gpt-realtime',
                 audio: {
                     output: { voice: voice || 'alloy' }
                 },

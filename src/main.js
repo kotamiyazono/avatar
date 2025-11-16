@@ -2,6 +2,14 @@ import { AudioVisualizer } from './visualizer.js';
 import { RealtimeAgent, RealtimeSession, tool } from '@openai/agents/realtime';
 import { z } from 'zod';
 
+// 定数定義
+const PRICING = {
+    'gpt-realtime': { input: 32.00, output: 64.00 },
+    'gpt-realtime-mini': { input: 10.00, output: 20.00 }
+};
+const TOKENS_PER_MILLION = 1000000;
+const POLLING_INTERVAL_MS = 5000;
+
 // Web検索ツールの定義
 const webSearchTool = tool({
     name: 'web_search',
@@ -68,6 +76,13 @@ class AvatarApp {
             instructions: localStorage.getItem('instructions') || 'You are a friendly assistant.',
             theme: localStorage.getItem('theme') || 'system',
             visualization: localStorage.getItem('visualization') || 'sphere',
+            model: localStorage.getItem('model') || 'gpt-realtime-mini',
+        };
+
+        // トークン数の追跡
+        this.tokenUsage = {
+            inputTokens: 0,
+            outputTokens: 0
         };
 
         // システムのダークモード検出
@@ -84,6 +99,9 @@ class AvatarApp {
         this.applyTheme(this.settings.theme);
         this.applyVisualization(this.settings.visualization);
         this.visualizer.start();
+
+        // 初期表示
+        this.updateSessionInfo();
     }
 
     initUI() {
@@ -100,6 +118,10 @@ class AvatarApp {
         this.instructionsInput = document.getElementById('instructions');
         this.themeSelect = document.getElementById('theme');
         this.visualizationSelect = document.getElementById('visualization-select');
+        this.modelSelect = document.getElementById('model-select');
+
+        // セッション情報表示
+        this.sessionInfo = document.getElementById('session-info');
 
         // イベントリスナー
         this.connectBtn.addEventListener('click', () => this.toggleConnection());
@@ -125,6 +147,7 @@ class AvatarApp {
         this.instructionsInput.value = this.settings.instructions;
         this.themeSelect.value = this.settings.theme;
         this.visualizationSelect.value = this.settings.visualization;
+        this.modelSelect.value = this.settings.model;
     }
 
     openSettings() {
@@ -142,14 +165,17 @@ class AvatarApp {
         this.settings.instructions = this.instructionsInput.value;
         this.settings.theme = this.themeSelect.value;
         this.settings.visualization = this.visualizationSelect.value;
+        this.settings.model = this.modelSelect.value;
 
         localStorage.setItem('voice', this.settings.voice);
         localStorage.setItem('instructions', this.settings.instructions);
         localStorage.setItem('theme', this.settings.theme);
         localStorage.setItem('visualization', this.settings.visualization);
+        localStorage.setItem('model', this.settings.model);
 
         this.applyTheme(this.settings.theme);
         this.applyVisualization(this.settings.visualization);
+        this.updateSessionInfo();
 
         this.closeSettings();
         this.showStatus('Settings saved');
@@ -197,7 +223,7 @@ class AvatarApp {
             });
 
             this.session = new RealtimeSession(this.agent, {
-                model: 'gpt-realtime',
+                model: this.settings.model,
                 transport: transport,
                 config: {
                     audio: {
@@ -215,7 +241,8 @@ class AvatarApp {
                 },
                 body: JSON.stringify({
                     voice: this.settings.voice,
-                    instructions: this.settings.instructions
+                    instructions: this.settings.instructions,
+                    model: this.settings.model
                 })
             });
 
@@ -240,6 +267,14 @@ class AvatarApp {
             this.connectBtn.disabled = false;
             this.showStatus('Connected');
 
+            // トークン数をリセットして表示
+            this.tokenUsage.inputTokens = 0;
+            this.tokenUsage.outputTokens = 0;
+            this.updateSessionInfo();
+
+            // トークン使用量のポーリングを開始
+            this.startTokenUsagePolling();
+
             // AI音声出力の解析を設定（ループを避けるため、出力のみ）
             await this.setupAudioVisualization();
 
@@ -261,6 +296,13 @@ class AvatarApp {
 
         this.session.on('agent_tool_end', (event) => {
             console.log('✅ Tool completed:', event);
+            // ツール完了後にトークン使用量を更新
+            this.updateTokenUsageFromSession();
+        });
+
+        // 会話アイテムが作成されたときにトークン使用量を更新
+        this.session.on('conversation.item.created', () => {
+            this.updateTokenUsageFromSession();
         });
 
         // エラーハンドリング
@@ -277,6 +319,7 @@ class AvatarApp {
                 this.connectBtn.textContent = 'Connect';
                 this.connectBtn.classList.remove('connected');
                 this.showStatus('Disconnected');
+                this.updateSessionInfo();
             }
         });
     }
@@ -420,6 +463,9 @@ class AvatarApp {
             this.connectBtn.disabled = true;
             this.showStatus('Disconnecting...');
 
+            // トークン使用量のポーリングを停止
+            this.stopTokenUsagePolling();
+
             // マイクストリームの停止
             if (this.micStream) {
                 console.log('🎤 Stopping microphone stream...');
@@ -513,6 +559,82 @@ class AvatarApp {
         const showRing = type === 'ring';
         const showGrid = type === 'grid';
         this.visualizer.setVisualizationElements(showSphere, showRing, showGrid);
+    }
+
+    updateTokenUsageFromSession() {
+        if (!this.session || !this.isConnected) return;
+
+        try {
+            // RealtimeSession.usageプロパティから直接トークン使用量を取得
+            const usage = this.session.usage;
+
+            if (usage) {
+                console.log('📊 Session usage:', usage);
+
+                // 使用量を設定（累積ではなく現在の値）
+                this.tokenUsage.inputTokens = usage.input_tokens || usage.inputTokens || 0;
+                this.tokenUsage.outputTokens = usage.output_tokens || usage.outputTokens || 0;
+
+                this.updateSessionInfo();
+            }
+        } catch (error) {
+            console.error('❌ Error getting usage from session:', error);
+        }
+    }
+
+    startTokenUsagePolling() {
+        // 定期的にトークン使用量を更新
+        this.tokenUsageInterval = setInterval(() => {
+            this.updateTokenUsageFromSession();
+        }, POLLING_INTERVAL_MS);
+    }
+
+    stopTokenUsagePolling() {
+        if (this.tokenUsageInterval) {
+            clearInterval(this.tokenUsageInterval);
+            this.tokenUsageInterval = null;
+        }
+    }
+
+    /**
+     * トークン使用量から料金を計算
+     * @param {number} inputTokens - 入力トークン数
+     * @param {number} outputTokens - 出力トークン数
+     * @param {string} model - モデル名
+     * @returns {number} 料金（USD）
+     */
+    calculateCost(inputTokens, outputTokens, model) {
+        const rates = PRICING[model];
+        if (!rates) {
+            console.warn(`Unknown model: ${model}`);
+            return 0;
+        }
+        return (inputTokens * rates.input / TOKENS_PER_MILLION) +
+               (outputTokens * rates.output / TOKENS_PER_MILLION);
+    }
+
+    updateSessionInfo() {
+        const modelName = this.settings.model;
+
+        if (!this.isConnected) {
+            this.sessionInfo.textContent =
+                `${modelName}\n` +
+                `0 tokens (in: 0 / out: 0)\n` +
+                `$0.00`;
+            return;
+        }
+
+        const totalTokens = this.tokenUsage.inputTokens + this.tokenUsage.outputTokens;
+        const cost = this.calculateCost(
+            this.tokenUsage.inputTokens,
+            this.tokenUsage.outputTokens,
+            this.settings.model
+        );
+
+        this.sessionInfo.textContent =
+            `${modelName}\n` +
+            `${totalTokens.toLocaleString()} tokens (in: ${this.tokenUsage.inputTokens.toLocaleString()} / out: ${this.tokenUsage.outputTokens.toLocaleString()})\n` +
+            `$${cost.toFixed(4)}`;
     }
 }
 
