@@ -178,12 +178,40 @@ export class AudioVisualizer {
         this.gridGroup = new THREE.Group();
         this.scene.add(this.gridGroup);
         this.gridSquares = [];
+        this.gridRows = 0;
+        this.gridCols = 0;
+        this.createGrid(); // 初期グリッド生成
+    }
+
+    createGrid() {
+        // 既存のグリッドをクリア
+        while (this.gridGroup.children.length > 0) {
+            const child = this.gridGroup.children[0];
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) child.material.dispose();
+            this.gridGroup.remove(child);
+        }
+        this.gridSquares = [];
 
         const aspect = window.innerWidth / window.innerHeight;
-        const gridRows = 16;
-        const gridCols = Math.ceil(gridRows * aspect);
+        const baseRows = 16;
+
+        // アスペクト比に応じて行と列を調整
+        let gridRows, gridCols;
+        if (aspect > 1) {
+            // 横長の場合
+            gridRows = baseRows;
+            gridCols = Math.ceil(baseRows * aspect);
+        } else {
+            // 縦長の場合
+            gridCols = baseRows;
+            gridRows = Math.ceil(baseRows / aspect);
+        }
+
         const squareSize = 0.5;
         const spacing = 0.52;
+
+        const initialColor = this.getIdleColorForTheme(this.theme);
 
         for (let y = 0; y < gridRows; y++) {
             for (let x = 0; x < gridCols; x++) {
@@ -216,7 +244,7 @@ export class AudioVisualizer {
 
         this.gridRows = gridRows;
         this.gridCols = gridCols;
-        this.gridGroup.visible = false;
+        this.gridGroup.visible = this.showGrid;
     }
 
     setColor(state) {
@@ -275,6 +303,9 @@ export class AudioVisualizer {
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(width, height);
+
+        // グリッドをウィンドウサイズに合わせて再生成
+        this.createGrid();
     }
 
     updateAudioData(frequencyData) {
@@ -419,6 +450,8 @@ export class AudioVisualizer {
             const col = square.userData.col;
             const centerX = (this.gridCols - 1) / 2;
             const centerY = (this.gridRows - 1) / 2;
+
+            // 円形の距離計算
             const distanceFromCenter = Math.sqrt(
                 Math.pow(col - centerX, 2) + Math.pow(row - centerY, 2)
             );
@@ -430,8 +463,8 @@ export class AudioVisualizer {
             const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY);
             const normalizedDistance = distanceFromCenter / maxDistance;
 
-            const distanceFactor = Math.max(0, 1 - normalizedDistance * 2.5);
-            const lift = value * avgValue * 5 * distanceFactor + wave * avgValue * 0.3 * distanceFactor;
+            const distanceFactor = Math.max(0.05, 1 - normalizedDistance * 1.7);
+            const lift = value * avgValue * 3 * distanceFactor + wave * avgValue * 0.2 * distanceFactor;
 
             square.position.x = square.userData.originalX;
             square.position.y = square.userData.originalY;
@@ -440,11 +473,11 @@ export class AudioVisualizer {
             square.material.color = color;
             square.material.emissive = color;
 
-            const gradientFactor = Math.max(0.1, 1 - normalizedDistance * 0.8);
+            const gradientFactor = Math.max(0.2, 1 - normalizedDistance * 0.65);
 
             if (isConnected && !isIdle) {
-                square.material.emissiveIntensity = (baseIntensity + value * 2.0) * gradientFactor;
-                square.material.opacity = (baseOpacity + value * 0.8) * gradientFactor;
+                square.material.emissiveIntensity = (baseIntensity + value * 1.0) * gradientFactor;
+                square.material.opacity = (baseOpacity + value * 0.5) * gradientFactor;
             } else {
                 square.material.emissiveIntensity = baseIntensity * gradientFactor;
                 square.material.opacity = baseOpacity * gradientFactor;
