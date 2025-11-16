@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avatar Voice Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Light mode colors */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9f9f9;
+            --text-primary: #000000;
+            --text-secondary: #666666;
+            --border-color: #ddd;
+            --border-hover: rgba(0, 0, 0, 0.2);
+            --btn-bg: rgba(255, 255, 255, 0.9);
+            --btn-bg-hover: rgba(255, 255, 255, 1);
+            --btn-border: rgba(0, 0, 0, 0.1);
+            --btn-disconnect-bg: rgba(0, 0, 0, 0.9);
+            --btn-disconnect-hover: rgba(0, 0, 0, 1);
+            --modal-overlay: rgba(0, 0, 0, 0.4);
+            --settings-icon: rgba(0, 0, 0, 0.9);
+            --settings-icon-hover: rgba(0, 0, 0, 1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #000000;
+                --bg-secondary: #1a1a1a;
+                --text-primary: #ffffff;
+                --text-secondary: #999999;
+                --border-color: #333;
+                --border-hover: rgba(255, 255, 255, 0.3);
+                --btn-bg: rgba(0, 0, 0, 0.9);
+                --btn-bg-hover: rgba(0, 0, 0, 1);
+                --btn-border: rgba(255, 255, 255, 0.1);
+                --btn-disconnect-bg: rgba(255, 255, 255, 0.9);
+                --btn-disconnect-hover: rgba(255, 255, 255, 1);
+                --modal-overlay: rgba(255, 255, 255, 0.1);
+                --settings-icon: rgba(255, 255, 255, 0.6);
+                --settings-icon-hover: rgba(255, 255, 255, 1);
+            }
+        }
+
+        /* Manual dark theme override */
+        html[data-theme="dark"] {
+            --bg-primary: #000000;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #999999;
+            --border-color: #333;
+            --border-hover: rgba(255, 255, 255, 0.3);
+            --btn-bg: rgba(0, 0, 0, 0.9);
+            --btn-bg-hover: rgba(0, 0, 0, 1);
+            --btn-border: rgba(255, 255, 255, 0.1);
+            --btn-disconnect-bg: rgba(255, 255, 255, 0.9);
+            --btn-disconnect-hover: rgba(255, 255, 255, 1);
+            --modal-overlay: rgba(255, 255, 255, 0.1);
+            --settings-icon: rgba(255, 255, 255, 0.6);
+            --settings-icon-hover: rgba(255, 255, 255, 1);
+        }
+
+        /* Manual light theme override */
+        html[data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9f9f9;
+            --text-primary: #000000;
+            --text-secondary: #666666;
+            --border-color: #ddd;
+            --border-hover: rgba(0, 0, 0, 0.2);
+            --btn-bg: rgba(255, 255, 255, 0.9);
+            --btn-bg-hover: rgba(255, 255, 255, 1);
+            --btn-border: rgba(0, 0, 0, 0.1);
+            --btn-disconnect-bg: rgba(0, 0, 0, 0.9);
+            --btn-disconnect-hover: rgba(0, 0, 0, 1);
+            --modal-overlay: rgba(0, 0, 0, 0.4);
+            --settings-icon: rgba(0, 0, 0, 0.9);
+            --settings-icon-hover: rgba(0, 0, 0, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: var(--bg-primary);
+            font-family: "Doto", sans-serif;
+            color: var(--text-primary);
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #visualization {
+            width: 100%;
+            height: 100%;
+        }
+
+        #settings-btn {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 100;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 200;
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+
+        #settings-btn::before {
+            content: '+';
+        }
+
+        #settings-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        #connect-btn {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 32px;
+            border-radius: 24px;
+            border: 1px solid var(--btn-border);
+            background: var(--btn-bg);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            font-family: "Doto", sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        #connect-btn:hover {
+            background: var(--btn-bg-hover);
+            border-color: var(--border-hover);
+        }
+
+        #connect-btn.connected {
+            background: var(--btn-disconnect-bg);
+            color: var(--bg-primary);
+            border-color: var(--btn-disconnect-bg);
+        }
+
+        #connect-btn.connected:hover {
+            background: var(--btn-disconnect-hover);
+            border-color: var(--btn-disconnect-hover);
+        }
+
+        #connect-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--modal-overlay);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        #settings-modal.active {
+            display: flex;
+        }
+
+        .settings-content {
+            background: var(--bg-primary);
+            padding: 48px;
+            width: 90vw;
+            max-width: 600px;
+            height: 90vh;
+            max-height: 800px;
+            overflow-y: auto;
+            border-radius: 8px;
+        }
+
+        .settings-content h2 {
+            margin-bottom: 32px;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .setting-group {
+            margin-bottom: 24px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .setting-group input[type="text"],
+        .setting-group input[type="password"],
+        .setting-group select,
+        .setting-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .setting-group input:focus,
+        .setting-group select:focus,
+        .setting-group textarea:focus {
+            outline: none;
+            border-color: var(--text-primary);
+        }
+
+        .setting-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .radio-option:hover {
+            border-color: var(--border-hover);
+        }
+
+        .radio-option input[type="radio"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .radio-option label {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 400;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        .button-group button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 14px;
+            font-weight: 500;
+            font-family: "Doto", sans-serif;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .save-btn {
+            background: var(--text-primary);
+            color: var(--bg-primary);
+            border-color: var(--text-primary);
+        }
+
+        .save-btn:hover {
+            opacity: 0.8;
+        }
+
+        .cancel-btn {
+            background: transparent;
+            color: var(--text-primary);
+        }
+
+        .cancel-btn:hover {
+            background: var(--bg-secondary);
+        }
+
+        #status {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 400;
+            font-family: "Doto", sans-serif;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #status.visible {
+            opacity: 1;
+        }
+
+        /* Scrollbar */
+        .settings-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .settings-content::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        .settings-content::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .settings-content::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="visualization"></canvas>
+    </div>
+
+    <button id="settings-btn" aria-label="Settings"></button>
+    <button id="connect-btn">Connect</button>
+    <div id="status"></div>
+
+    <div id="settings-modal">
+        <div class="settings-content">
+            <h2>Settings</h2>
+
+            <div class="setting-group">
+                <label for="voice">Voice</label>
+                <select id="voice">
+                    <option value="alloy">Alloy</option>
+                    <option value="echo">Echo</option>
+                    <option value="shimmer">Shimmer</option>
+                    <option value="ash">Ash</option>
+                    <option value="ballad">Ballad</option>
+                    <option value="coral">Coral</option>
+                    <option value="sage">Sage</option>
+                    <option value="verse">Verse</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label for="instructions">Instructions</label>
+                <textarea id="instructions" placeholder="Enter instructions..."></textarea>
+            </div>
+
+            <div class="setting-group">
+                <label for="theme">Theme</label>
+                <select id="theme">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="system">System</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label>Visualization</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="viz-sphere" name="visualization" value="sphere" checked>
+                        <label for="viz-sphere">Sphere</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="viz-ring" name="visualization" value="ring">
+                        <label for="viz-ring">Ring</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="cancel-btn" id="cancel-btn">Cancel</button>
+                <button class="save-btn" id="save-btn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js?v=2"></script>
+</body>
+</html>

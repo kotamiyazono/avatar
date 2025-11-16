@@ -1,0 +1,23 @@
+{
+  "name": "avatar-voice-agent",
+  "version": "0.1.0",
+  "description": "Voice agent with fractal visualization using OpenAI Realtime API",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "server": "node server.js",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@openai/agents": "^0.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "three": "^0.181.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
