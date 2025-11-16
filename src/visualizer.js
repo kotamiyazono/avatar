@@ -7,11 +7,11 @@ import * as THREE from 'three';
 // 定数定義
 const COLORS = {
     AI_DARK: { r: 0, g: 230, b: 255 },
-    AI_LIGHT: { r: 0, g: 200, b: 255 },
+    AI_LIGHT: { r: 0, g: 200, b: 225 },
     USER_DARK: { r: 255, g: 68, b: 120 },
     USER_LIGHT: { r: 230, g: 50, b: 100 },
-    IDLE_DARK: { r: 5, g: 5, b: 5 },
-    IDLE_LIGHT: { r: 120, g: 120, b: 120 }
+    IDLE_DARK: { r: 10, g: 10, b: 10 },
+    IDLE_LIGHT: { r: 50, g: 50, b: 50 }
 };
 
 const LIGHTING = {

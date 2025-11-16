@@ -99,6 +99,7 @@ class AvatarApp {
         this.voiceSelect = document.getElementById('voice');
         this.instructionsInput = document.getElementById('instructions');
         this.themeSelect = document.getElementById('theme');
+        this.visualizationSelect = document.getElementById('visualization-select');
 
         // イベントリスナー
         this.connectBtn.addEventListener('click', () => this.toggleConnection());
@@ -123,10 +124,7 @@ class AvatarApp {
         this.voiceSelect.value = this.settings.voice;
         this.instructionsInput.value = this.settings.instructions;
         this.themeSelect.value = this.settings.theme;
-
-        // ビジュアライゼーションのラジオボタンを設定
-        const vizRadio = document.querySelector(`input[name="visualization"][value="${this.settings.visualization}"]`);
-        if (vizRadio) vizRadio.checked = true;
+        this.visualizationSelect.value = this.settings.visualization;
     }
 
     openSettings() {
@@ -134,6 +132,8 @@ class AvatarApp {
     }
 
     closeSettings() {
+        // キャンセル時はフォームを元に戻す
+        this.loadSettingsToForm();
         this.settingsModal.classList.remove('active');
     }
 
@@ -141,10 +141,7 @@ class AvatarApp {
         this.settings.voice = this.voiceSelect.value;
         this.settings.instructions = this.instructionsInput.value;
         this.settings.theme = this.themeSelect.value;
-
-        // ビジュアライゼーションのラジオボタンから値を取得
-        const vizRadio = document.querySelector('input[name="visualization"]:checked');
-        this.settings.visualization = vizRadio ? vizRadio.value : 'sphere';
+        this.settings.visualization = this.visualizationSelect.value;
 
         localStorage.setItem('voice', this.settings.voice);
         localStorage.setItem('instructions', this.settings.instructions);
